@@ -29,6 +29,16 @@ cc_binary(
     srcs = [
         "q1.cc"
             ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib"
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    data = glob(["data/q1*"]),
 )
 
 cc_binary(

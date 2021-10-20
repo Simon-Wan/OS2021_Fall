@@ -144,10 +144,22 @@ bool Embedding::operator==(const Embedding &another) {
 
 EmbeddingHolder::EmbeddingHolder(std::string filename) {
     this->emb_matx = this->read(filename);
+    //// begin
+    unsigned int num = this->emb_matx.size();
+    for (unsigned int i = 0; i < num; i++) {
+        this->lock_list.push_back(new std::mutex);
+    }
+    //// end
 }
 
 EmbeddingHolder::EmbeddingHolder(std::vector<Embedding*> &data) {
     this->emb_matx = data;
+    //// begin
+    unsigned int num = this->emb_matx.size();
+    for (unsigned int i = 0; i < num; i++) {
+        this->lock_list.push_back(new std::mutex);
+    }
+    //// end
 }
 
 EmbeddingMatrix EmbeddingHolder::read(std::string filename) {
@@ -180,6 +192,9 @@ int EmbeddingHolder::append(Embedding* data) {
         "Embedding to append has a different length!", LEN_MISMATCH
     );
     this->emb_matx.push_back(data);
+    //// begin
+    this->lock_list.push_back(new std::mutex);
+    //// end
     return indx;
 }
 
