@@ -149,6 +149,7 @@ EmbeddingHolder::EmbeddingHolder(std::string filename) {
     for (unsigned int i = 0; i < num; i++) {
         this->lock_list.push_back(new std::mutex);
     }
+    //this->update_queue_list = std::vector<std::priority_queue<int, std::vector<int>, std::greater<int>>>(num);
     //// end
 }
 
@@ -159,6 +160,7 @@ EmbeddingHolder::EmbeddingHolder(std::vector<Embedding*> &data) {
     for (unsigned int i = 0; i < num; i++) {
         this->lock_list.push_back(new std::mutex);
     }
+    //this->update_queue_list = std::vector<std::priority_queue<int, std::vector<int>, std::greater<int>>>(num);
     //// end
 }
 
@@ -194,6 +196,7 @@ int EmbeddingHolder::append(Embedding* data) {
     this->emb_matx.push_back(data);
     //// begin
     this->lock_list.push_back(new std::mutex);
+    //this->update_queue_list.push_back(std::priority_queue<int, std::vector<int>, std::greater<int>>());
     //// end
     return indx;
 }

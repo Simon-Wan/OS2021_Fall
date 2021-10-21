@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <queue>
 
 namespace proj1 {
 
@@ -61,6 +62,10 @@ public:
     bool operator==(const EmbeddingHolder&);
     //// begin
     std::vector<std::mutex *> lock_list;    //// vector of pointers to locks
+    /*std::vector<std::priority_queue<int, std::vector<int>, std::greater<int>>> update_queue_list;     //// vector of queues for iter_idx
+    void push_to_queue(int idx, int epoch) { this->update_queue_list[idx].push(epoch); printf("(%d,%d)\n",idx, epoch);}
+    void pop_from_queue(int idx) { printf("(%d)\n",this->update_queue_list[idx].top()); this->update_queue_list[idx].pop(); }
+    bool update_valid(int idx, int epoch) { return (this->update_queue_list[idx].top() == epoch); }*/
     //// finish
 private:
     EmbeddingMatrix emb_matx;
