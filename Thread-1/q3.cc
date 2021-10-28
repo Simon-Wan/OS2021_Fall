@@ -24,13 +24,7 @@ void cold_start_with_result(std::pair<EmbeddingGradient*, bool> &gradient, Embed
 }
 
 bool update_valid(int epoch, std::priority_queue<int, std::vector<int>, std::greater<int>>& update_queue) {
-    if (update_queue.top() == epoch) {
-        printf("%d\n",epoch);
-        update_queue.pop();
-        return true;
-    }
-    else
-        return false;
+    return (update_queue.top() == epoch);
 }
 
 void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHolder* items, std::mutex& mtx, std::priority_queue<int, std::vector<int>, std::greater<int>>& update_queue) {
@@ -109,11 +103,11 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
             //// push (user, item) in instruction into update queue
             bool waiting = true;
             while (waiting) {
-
                 mtx.lock();
                 waiting = false;
                 if(user_idx >= users->get_n_embeddings()) {     //// check if the user exists
                     waiting = true;     //todo
+                    printf("prepared:(%d,%d)\n",user_idx,item_idx);
                 }
                 else {
                     break;
@@ -129,6 +123,10 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
             waiting = true;
             while (waiting) {
                 mtx.lock();
+                if(!update_valid(epoch, update_queue)) {
+                    mtx.unlock();
+                    continue;
+                }
                 waiting = false;
                 if(items->lock_list[item_idx]->try_lock()) {
                     items->lock_list[item_idx]->unlock();
@@ -142,14 +140,12 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
                 else {
                     waiting = true;
                 }
-                if (!waiting && update_valid(epoch, update_queue)) {
+                if (!waiting) {
                     items->lock_list[item_idx]->lock();
                     users->lock_list[user_idx]->lock();
-                    printf("unlock:(%d,%d)\n",user_idx,item_idx);
+                    printf("lock:(%d,%d,%d,%d)\n",user_idx,item_idx, epoch, update_queue.top());
+                    update_queue.pop();
                     break;
-                }
-                else {
-                    waiting = true;
                 }
                 mtx.unlock();   //// give control to other threads
             }
@@ -165,6 +161,7 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
             gradient = calc_gradient(item, user, label);
             items->update_embedding(item_idx, gradient, 0.001);
             items->lock_list[item_idx]->unlock();   //// release item's lock
+            printf("unlock:(%d,%d)\n",user_idx,item_idx);
 
             break;
         }
@@ -207,7 +204,7 @@ int main(int argc, char *argv[]) {
     //// end
 
     }
-
+    printf("finished!\n");
     // Write the result
     //users->write_to_stdout();
     //items->write_to_stdout();
