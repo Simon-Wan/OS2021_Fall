@@ -9,7 +9,6 @@
 
 #include <mutex>    // lock
 #include <thread>   // thread
-#include <queue>
 
 #include "lib/utils.h"
 #include "lib/model.h"
@@ -17,6 +16,7 @@
 #include "lib/instruction.h"
 
 namespace proj1 {
+
 
 void process_item_and_get_gradient(std::pair<EmbeddingGradient*, bool> &gradient, EmbeddingHolder* items, Embedding* newUser, int item_index, std::mutex& mtx){
     bool waiting = true;
@@ -37,16 +37,7 @@ void process_item_and_get_gradient(std::pair<EmbeddingGradient*, bool> &gradient
 }
 
 
-bool update_valid(int epoch, std::priority_queue<int, std::vector<int>, std::greater<int>>& update_queue) {		//output whether UPDATE instruction can be executed
-    if (update_queue.top() == epoch) {
-        update_queue.pop();
-        return true;
-    }
-    else
-        return false;
-}
-
-void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHolder* items, std::mutex& mtx, std::priority_queue<int, std::vector<int>, std::greater<int>>& update_queue) {
+void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHolder* items, std::mutex& mtx) {
     switch(inst.order) {
         case INIT_EMB: {
             int length = users->get_emb_length();
@@ -77,17 +68,14 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
             users->lock_list[user_idx]->unlock();    //// release new user's lock
 
             break;
+
+
         }
         case UPDATE_EMB: {
             int user_idx = inst.payloads[0];
             int item_idx = inst.payloads[1];
             int label = inst.payloads[2];
-
-            int epoch = -1;
-            if (inst.payloads.size() > 3) {
-                epoch = inst.payloads[3];
-            }
-            //// push (user, item) in instruction into update queue
+            //// acquire lock for user and item
             bool waiting = true;
             while (waiting) {
                 mtx.lock();
@@ -120,13 +108,10 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
                 else {
                     waiting = true;
                 }
-                if (!waiting && update_valid(epoch, update_queue)) {
+                if (!waiting) {
                     items->lock_list[item_idx]->lock();
                     users->lock_list[user_idx]->lock();
                     break;
-                }
-                else {
-                    waiting = true;
                 }
                 mtx.unlock();   //// give control to other threads
             }
@@ -137,11 +122,13 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
             Embedding* item = items->get_embedding(item_idx);
             EmbeddingGradient* gradient = calc_gradient(user, item, label);
             users->update_embedding(user_idx, gradient, 0.01);
-            users->lock_list[user_idx]->unlock();   //// release user's lock
+
+            users->lock_list[user_idx]->unlock();    //// release user's lock
 
             gradient = calc_gradient(item, user, label);
             items->update_embedding(item_idx, gradient, 0.001);
-            items->lock_list[item_idx]->unlock();   //// release item's lock
+
+            items->lock_list[item_idx]->unlock();    //// release item's lock
 
             break;
         }
@@ -151,38 +138,3 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
 
 }
 } // namespace proj1
-
-int main(int argc, char *argv[]) {
-    proj1::EmbeddingHolder* users = new proj1::EmbeddingHolder("data/q3.in");
-    proj1::EmbeddingHolder* items = new proj1::EmbeddingHolder("data/q3.in");
-    proj1::Instructions instructions = proj1::read_instructrions("data/q3_instruction.tsv");
-    {
-    proj1::AutoTimer timer("q3");  // using this to print out timing of the block
-    // Run all the instructions
-
-    //// begin
-    std::vector <std::thread> thread_list;
-    std::mutex mtx;
-    std::priority_queue<int, std::vector<int>, std::greater<int>> update_queue;
-    for (proj1::Instruction inst: instructions) {
-        if (inst.order == 1 && inst.payloads.size() > 3) {
-            update_queue.push(inst.payloads[3]);
-        }
-    }
-    for (proj1::Instruction inst: instructions) {
-        thread_list.push_back(std::thread(proj1::run_one_instruction, inst, users, items, std::ref(mtx), std::ref(update_queue)));
-    }
-
-    for (std::thread &each_thread: thread_list) {   //// use '&' to ensure that each_thread can be modified
-        each_thread.join();
-    }
-    //// end
-
-    }
-
-    // Write the result
-    users->write_to_stdout();
-    items->write_to_stdout();
-
-    return 0;
-}

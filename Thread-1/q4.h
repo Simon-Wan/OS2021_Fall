@@ -36,8 +36,7 @@ void process_item_and_get_gradient(std::pair<EmbeddingGradient*, bool> &gradient
 	gradient.second = true;     //// indicate whether the calculation is finished
 }
 
-
-bool update_valid(int epoch, std::priority_queue<int, std::vector<int>, std::greater<int>>& update_queue) {		//output whether UPDATE instruction can be executed
+bool update_valid(int epoch, std::priority_queue<int, std::vector<int>, std::greater<int>>& update_queue) {
     if (update_queue.top() == epoch) {
         update_queue.pop();
         return true;
@@ -123,6 +122,7 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
                 if (!waiting && update_valid(epoch, update_queue)) {
                     items->lock_list[item_idx]->lock();
                     users->lock_list[user_idx]->lock();
+                    //printf("unlock:(%d,%d)\n",user_idx,item_idx);
                     break;
                 }
                 else {
@@ -145,44 +145,60 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
 
             break;
         }
-        default:
+        case RECOMMEND: {
+            int user_idx = inst.payloads[0];
+            std::vector<int> item_idxes;
+        	std::vector<Embedding*> item_pool;
+        	int iter_idx = inst.payloads[1];
+        	for (unsigned int i = 2; i < inst.payloads.size(); ++i) {
+        		item_idxes.push_back(inst.payloads[i]);
+			}
+			bool waiting = true;
+			while (waiting) {
+				mtx.lock();
+				waiting = false;
+				if (users->lock_list[user_idx]->try_lock()) {
+					users->lock_list[user_idx]->unlock();
+				}
+				else {
+					waiting = true;
+				}
+				for (int item_idx : item_idxes) {
+					if (items->lock_list[item_idx]->try_lock()) {
+						items->lock_list[item_idx]->unlock();
+					}
+					else {
+						waiting = true;
+						break;
+					}
+				}
+				if (!update_queue.empty() && iter_idx >= update_queue.top()) {		//// correct position for recommend instructions
+					waiting = true;
+				}
+				if (!waiting) {
+					users->lock_list[user_idx]->lock();
+					for (int item_idx : item_idxes) {
+						items->lock_list[item_idx]->try_lock();
+					}
+				}
+				mtx.unlock();
+			}
+			mtx.unlock();
+
+        	for (int item_idx : item_idxes) {
+            	item_pool.push_back(items->get_embedding(item_idx));
+            	items->lock_list[item_idx]->unlock();
+           	}
+           	Embedding* user = users->get_embedding(user_idx);
+           	users->lock_list[user_idx]->unlock();
+
+        	Embedding* recommendation = recommend(user, item_pool);
+        	mtx.lock();
+        	recommendation->write_to_stdout();		//promise that stdout() is atomic
+           	mtx.unlock();
             break;
+        }
     }
 
 }
 } // namespace proj1
-
-int main(int argc, char *argv[]) {
-    proj1::EmbeddingHolder* users = new proj1::EmbeddingHolder("data/q3.in");
-    proj1::EmbeddingHolder* items = new proj1::EmbeddingHolder("data/q3.in");
-    proj1::Instructions instructions = proj1::read_instructrions("data/q3_instruction.tsv");
-    {
-    proj1::AutoTimer timer("q3");  // using this to print out timing of the block
-    // Run all the instructions
-
-    //// begin
-    std::vector <std::thread> thread_list;
-    std::mutex mtx;
-    std::priority_queue<int, std::vector<int>, std::greater<int>> update_queue;
-    for (proj1::Instruction inst: instructions) {
-        if (inst.order == 1 && inst.payloads.size() > 3) {
-            update_queue.push(inst.payloads[3]);
-        }
-    }
-    for (proj1::Instruction inst: instructions) {
-        thread_list.push_back(std::thread(proj1::run_one_instruction, inst, users, items, std::ref(mtx), std::ref(update_queue)));
-    }
-
-    for (std::thread &each_thread: thread_list) {   //// use '&' to ensure that each_thread can be modified
-        each_thread.join();
-    }
-    //// end
-
-    }
-
-    // Write the result
-    users->write_to_stdout();
-    items->write_to_stdout();
-
-    return 0;
-}

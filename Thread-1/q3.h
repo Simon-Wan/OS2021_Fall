@@ -152,37 +152,3 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
 }
 } // namespace proj1
 
-int main(int argc, char *argv[]) {
-    proj1::EmbeddingHolder* users = new proj1::EmbeddingHolder("data/q3.in");
-    proj1::EmbeddingHolder* items = new proj1::EmbeddingHolder("data/q3.in");
-    proj1::Instructions instructions = proj1::read_instructrions("data/q3_instruction.tsv");
-    {
-    proj1::AutoTimer timer("q3");  // using this to print out timing of the block
-    // Run all the instructions
-
-    //// begin
-    std::vector <std::thread> thread_list;
-    std::mutex mtx;
-    std::priority_queue<int, std::vector<int>, std::greater<int>> update_queue;
-    for (proj1::Instruction inst: instructions) {
-        if (inst.order == 1 && inst.payloads.size() > 3) {
-            update_queue.push(inst.payloads[3]);
-        }
-    }
-    for (proj1::Instruction inst: instructions) {
-        thread_list.push_back(std::thread(proj1::run_one_instruction, inst, users, items, std::ref(mtx), std::ref(update_queue)));
-    }
-
-    for (std::thread &each_thread: thread_list) {   //// use '&' to ensure that each_thread can be modified
-        each_thread.join();
-    }
-    //// end
-
-    }
-
-    // Write the result
-    users->write_to_stdout();
-    items->write_to_stdout();
-
-    return 0;
-}

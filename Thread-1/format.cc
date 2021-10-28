@@ -5,7 +5,7 @@
 
 // modify settsing here to check outpput format of other files
 std::string filename = "format.out";
-int len = 16, lines = 48;
+int len = 16, lines = 45;
 
 int main(){
     std::string line;

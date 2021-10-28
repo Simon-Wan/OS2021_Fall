@@ -17,8 +17,22 @@
 
 namespace proj1 {
 
-void cold_start_with_result(std::pair<EmbeddingGradient*, bool> &gradient, Embedding* newUser, Embedding* item) {
-	gradient.first = cold_start(newUser, item);
+
+void process_item_and_get_gradient(std::pair<EmbeddingGradient*, bool> &gradient, EmbeddingHolder* items, Embedding* newUser, int item_index, std::mutex& mtx){
+    bool waiting = true;
+    while (waiting) {
+        mtx.lock();
+        waiting = false;
+        if(items->lock_list[item_index]->try_lock()) {  //// acquire item's lock
+        }
+        else
+            waiting = true;
+        mtx.unlock();
+    }
+    Embedding* item_emb = items->get_embedding(item_index);
+    items->lock_list[item_index]->unlock();    //// release this item's lock
+
+    gradient.first = cold_start(newUser, item_emb);
 	gradient.second = true;     //// indicate whether the calculation is finished
 }
 
@@ -26,66 +40,36 @@ void cold_start_with_result(std::pair<EmbeddingGradient*, bool> &gradient, Embed
 void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHolder* items, std::mutex& mtx) {
     switch(inst.order) {
         case INIT_EMB: {
-            // We need to init the embedding
             int length = users->get_emb_length();
             Embedding* new_user = new Embedding(length);
-            //// acquire items' lock
-            bool waiting = true;
-            while (waiting) {
-                mtx.lock();
-                waiting = false;
-                for (int item_index: inst.payloads) {
-                    if(items->lock_list[item_index]->try_lock()) {
-                        items->lock_list[item_index]->unlock();
-                    }
-                    else {
-                        waiting = true;
-                        break;
-                    }
-                }
-                if (!waiting) {
-                    for (int item_index: inst.payloads) {
-                        items->lock_list[item_index]->lock();
-                    }
-                    break;
-                }
-                mtx.unlock();   //// give control to other threads
-            }
-            int user_idx = users->append(new_user);     //// add lock for new user
-
-            users->lock_list[user_idx]->lock();         //// acquire new user's lock
-            mtx.unlock();       //// unlock mutex after all user & item locks are locked
+            ////
 
             std::vector <std::thread> inner_thread_list;    //// create inner thread list
             std::map <int, std::pair<EmbeddingGradient*, bool> > embedding_gradient_map;	    //// map from item_idx to its gradient
             for (int item_index: inst.payloads) {
             	embedding_gradient_map[item_index] = std::pair<EmbeddingGradient*, bool> (nullptr, false);
 			}
+
+
+            int user_idx = users->append(new_user);
+            users->lock_list[user_idx]->lock();      //// acquire new user's lock
+
             for (int item_index: inst.payloads) {		    //// create a thread for each item_idx
-                Embedding* item_emb = items->get_embedding(item_index);
-                items->lock_list[item_index]->unlock();     //// release this item's lock
-                inner_thread_list.push_back(std::thread(cold_start_with_result, std::ref(embedding_gradient_map[item_index]), new_user, item_emb));
+                inner_thread_list.push_back(std::thread(process_item_and_get_gradient, std::ref(embedding_gradient_map[item_index]), items, new_user, item_index, std::ref(mtx)));
             }
             for (std::thread &each_thread: inner_thread_list) {
             	each_thread.join();
 			}
-			while(true) {       //// update the embedding of new user
-				bool ready = true;
-				for (int item_index: inst.payloads) {
-					if (embedding_gradient_map[item_index].second == false)
-					    ready = false;
-				}
-				if (ready) {
-					for (int item_index: inst.payloads) {
-						users->update_embedding(user_idx, embedding_gradient_map[item_index].first, 0.01);
-					}
-					break;
-				}
+
+			for (int item_index: inst.payloads) {			//// update embedding of the user
+				users->update_embedding(user_idx, embedding_gradient_map[item_index].first, 0.01);
 			}
 
             users->lock_list[user_idx]->unlock();    //// release new user's lock
 
             break;
+
+
         }
         case UPDATE_EMB: {
             int user_idx = inst.payloads[0];
@@ -93,6 +77,22 @@ void run_one_instruction(Instruction inst, EmbeddingHolder* users, EmbeddingHold
             int label = inst.payloads[2];
             //// acquire lock for user and item
             bool waiting = true;
+            while (waiting) {
+                mtx.lock();
+                waiting = false;
+                if(user_idx >= users->get_n_embeddings()) {     //// check if the user exists
+                    waiting = true;
+                }
+                else {
+                    break;
+                }
+                mtx.unlock();   //// give control to other threads
+            }
+            mtx.unlock();
+            ////
+
+            //// acquire lock for user and item
+            waiting = true;
             while (waiting) {
                 mtx.lock();
                 waiting = false;
