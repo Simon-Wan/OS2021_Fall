@@ -38,6 +38,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q1*"]),
 )
 
@@ -55,6 +56,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q2*"]),
 )
 
@@ -72,6 +74,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q3*"]),
 )
 
@@ -89,6 +92,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q4*"]),
 )
 
@@ -103,6 +107,7 @@ cc_test(
         "-O3",
         "-std=c++11",
   ],
+  linkopts = ["-pthread"],
   data = glob(["data/*"]),
 )
 
@@ -121,6 +126,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q1*"]),
 )
 
@@ -139,6 +145,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q2*"]),
 )
 
@@ -157,6 +164,7 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q3*"]),
 )
 
@@ -175,5 +183,6 @@ cc_binary(
     copts = [
         "-std=c++11",
     ],
+    linkopts = ["-pthread"],
     data = glob(["data/q4*"]),
 )
