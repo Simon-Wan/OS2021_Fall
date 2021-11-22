@@ -158,7 +158,7 @@ C++ threading library (such as `pthread`, or Intel's TBB to do the following tas
 You should create a `.diff` file of your latest commit from the latest commit of the main project on learn.tsinghua, as follows:
 
 ```bash
-git diff YOUR_COMMIT_SHA1 MAIN_REPO_COMMIT_SHA1 > ${STUDENT_ID_1}_${STUDENT_ID_2}.diff
+git diff MAIN_REPO_COMMIT_SHA 1YOUR_COMMIT_SHA1 > ${STUDENT_ID_1}_${STUDENT_ID_2}.diff
 ```
 
 To test whether your `.diff` works, clone a new repo and call `git apply ${STUDENT_ID_1}_${STUDENT_ID_2}.diff` and see if your code still works.
@@ -251,6 +251,38 @@ In this task, the input `Instruction`  set contains all three types of tasks: "i
 > **_NOTE:_** You should output your recommend results in a thread-safe manner, too.
 
 > **_NOTE:_** In this task, update instructions still have `iter_idx` constraints. Recommend instructions can be executed after update instructions with larger `iter_idx`.
+
+**Grading:**
+
+You will be graded by the correctness and delay of your recommendation (from the programs' start to recommend result output), as well as being able to read the updated embedding after a relatively short period of time.
+
+## Task-5: Inplace recommendation and update
+
+The goal of this task is the same as Task-4, except that you need to implement in-place updates and recommendations.
+That is, you should not copy embeddings and then do the calculation on the copies.
+Other instructions stay the same as Task-4. If your implementations are already an in-place version in Task-4,
+you should implement a version that copies the embeddings from the embedding holder (this
+one should be faster, as it trades space for time).
+
+**ToDo:**
+
+Similar with Task-4, you should output the recommend result as soon as you get it by calling the provided `Embedding::write_to_stdout()` (we accept all possible order of correct outputs). The delay of recommender response will impact your final score.  There is no need to output the final `EmbeddingHolder` in this tasks.
+
+**Grading:**
+
+You will be graded by the correctness and delay of your recommendation (from the programs' start to recommend result output), as well as being able to read the updated embedding after a relatively short period of time.
+
+## Task-5: Inplace recommendation and update
+
+The goal of this task is the same as Task-4, except that you need to implement in-place updates and recommendations.
+That is, you should not copy embeddings and then do the calculation on the copies.
+Other instructions stay the same as Task-4. If your implementations are already an in-place version in Task-4,
+you should implement a version that copies the embeddings from the embedding holder (this
+one should be faster, as it trades space for time).
+
+**ToDo:**
+
+Similar with Task-4, you should output the recommend result as soon as you get it by calling the provided `Embedding::write_to_stdout()` (we accept all possible order of correct outputs). The delay of recommender response will impact your final score.  There is no need to output the final `EmbeddingHolder` in this tasks.
 
 **Grading:**
 
