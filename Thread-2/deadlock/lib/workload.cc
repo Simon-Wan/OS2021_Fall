@@ -28,6 +28,8 @@ void workload(ResourceManager *mgr,
     sleep_time1 = sleep_time1 < 0? randint(MIN_RUNNING_TIME, MAX_RUNNING_TIME): sleep_time1;
     sleep_time2 = sleep_time2 < 0? randint(MIN_RUNNING_TIME, MAX_RUNNING_TIME): sleep_time2;
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     // Request resource -> running -> request another -> running -> release
     if (mgr->request(rsc1, rsc1_amount) < 0)  // I'm killed
         return;

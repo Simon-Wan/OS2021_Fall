@@ -23,10 +23,17 @@ public:
     void budget_claim(std::map<RESOURCE, int> budget);
     int request(RESOURCE, int amount);
     void release(RESOURCE, int amount);
+    bool banker(RESOURCE, int, std::thread::id);
 private:
+	std::map<std::thread::id, std::map<RESOURCE, int> > resource_Alloc;
+	std::map<std::thread::id, std::map<RESOURCE, int> > resource_Max;
+	std::mutex mtx_Alloc;
+	std::mutex mtx_Max;
+	std::mutex mtx_Banker;
+
     std::map<RESOURCE, int> resource_amount;
-    std::map<RESOURCE, std::mutex> resource_mutex;
-    std::map<RESOURCE, std::condition_variable> resource_cv;
+    std::mutex resource_mutex;
+    std::condition_variable resource_cv;
     ThreadManager *tmgr;
 };
 

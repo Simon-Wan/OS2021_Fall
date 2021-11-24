@@ -25,6 +25,11 @@ protected:
     std::mutex mtx_naO;
     std::mutex mtx_ncO;
 
+    int num_adult_M = 0;
+    int num_child_M = 0;
+    std::mutex mtx_naM;
+    std::mutex mtx_ncM;
+
     std::condition_variable cv_adult_O;
     std::condition_variable cv_child_O;
     std::condition_variable cv_child_M;
@@ -42,8 +47,16 @@ protected:
 
     std::mutex mtx_sailing;
 
+    std::condition_variable cv_ready;
+    std::mutex mtx_ready;
     std::condition_variable cv_finish;
     std::mutex mtx_finish;
+
+    int total_adult;
+    int total_child;
+
+    int ready_adult;
+    int ready_child;
 
 };
 }
