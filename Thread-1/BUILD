@@ -29,6 +29,17 @@ cc_binary(
     srcs = [
         "q1.cc"
             ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib"
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q1*"]),
 )
 
 cc_binary(
@@ -36,6 +47,17 @@ cc_binary(
     srcs = [
         "q2.cc"
             ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib"
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q2*"]),
 )
 
 cc_binary(
@@ -43,6 +65,53 @@ cc_binary(
     srcs = [
         "q3.cc"
             ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib"
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q3*"]),
+)
+
+cc_binary(
+    name = "q4",
+    srcs = [
+        "q4.cc"
+            ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib"
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q4*"]),
+)
+
+cc_binary(
+    name = "q5",
+    srcs = [
+        "q5.cc"
+            ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib"
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q5*"]),
 )
 
 cc_test(
@@ -56,5 +125,82 @@ cc_test(
         "-O3",
         "-std=c++11",
   ],
+  linkopts = ["-pthread"],
   data = glob(["data/*"]),
+)
+
+cc_binary(
+    name = "q1_test",
+    srcs = [
+        "q1_test.cc",
+        "q1.h"
+            ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib",
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q1*"]),
+)
+
+cc_binary(
+    name = "q2_test",
+    srcs = [
+        "q2_test.cc",
+        "q2.h"
+            ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib",
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q2*"]),
+)
+
+cc_binary(
+    name = "q3_test",
+    srcs = [
+        "q3_test.cc",
+        "q3.h"
+            ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib",
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q3*"]),
+)
+
+cc_binary(
+    name = "q4_test",
+    srcs = [
+        "q4_test.cc",
+        "q4.h"
+            ],
+    deps = [
+        "//lib:embedding_lib",
+        "//lib:instruction_lib",
+        "//lib:utils_lib",
+        "//lib:model_lib",
+    ],
+    copts = [
+        "-std=c++11",
+    ],
+    linkopts = ["-pthread"],
+    data = glob(["data/q4*"]),
 )
