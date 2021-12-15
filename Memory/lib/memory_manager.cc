@@ -72,6 +72,8 @@ namespace proj3 {
         this->next_array_id = 0;
         this->mem = new PageFrame[sz];
         this->page_info = new PageInfo[sz];
+        this->CLOCK = new bool[sz];
+        this->CLOCKidx = 0;
         for (int i = 0; i < sz; i++){
             PageFrame* newPage = new PageFrame;
             this->mem[i] = *newPage;
@@ -90,11 +92,13 @@ namespace proj3 {
         std::string filename = std::to_string(holder) + "_" + std::to_string(virtual_page_id) + ".txt";
         this->mem[physical_page_id].WriteDisk(filename);
         this->page_map[holder][virtual_page_id] = -1;
+        this->CLOCK[physical_page_id] = false;
 
     }
     void MemoryManager::PageIn(int array_id, int virtual_page_id, int physical_page_id){
         //swap the target page from the disk file into a physical page with the index of 'physical_page_id out'
         this->page_info[physical_page_id].SetInfo(array_id, virtual_page_id);
+        this->CLOCK[physical_page_id] = false;
         if (this->page_map[array_id][virtual_page_id] == -2) {
             for(int i = 0; i < PageSize; i++){
                 this->mem[physical_page_id][i] = 0;
@@ -115,12 +119,18 @@ namespace proj3 {
             }
         }   // TODO: efficiency
         if (physical_page_id == -1){
-            std::pair<int, int> chosen_page = this->FIFO_queue.front();
+        	while (this->CLOCK[this->CLOCKidx] == true) {
+        		this->CLOCK[this->CLOCKidx] = false;
+        		this->CLOCKidx = (this->CLOCKidx + 1) % this->mma_sz;
+			}
+			physical_page_id = this->CLOCKidx;
+			this->CLOCKidx = (this->CLOCKidx + 1) % this->mma_sz;
+            /*int chosen_page = this->FIFO_queue.front();
             this->FIFO_queue.pop();
-            physical_page_id = this->page_map[chosen_page.first][chosen_page.second];
+            physical_page_id = chosen_page;*/
         }
-        this->FIFO_queue.push(std::make_pair(array_id, virtual_page_id));
-        // TODO: Replace
+        //this->FIFO_queue.push(physical_page_id);
+
         int last_holder = this->page_info[physical_page_id].GetHolder();
         //printf("%d_%d\n",last_holder, this->page_info[physical_page_id].GetVid());
         if (last_holder != -1){
@@ -136,6 +146,7 @@ namespace proj3 {
             this->PageReplace(array_id, virtual_page_id);
             physical_page_id = this->page_map[array_id][virtual_page_id];
         }
+        this->CLOCK[physical_page_id] = true;
         return this->mem[physical_page_id][offset];
     }
     void MemoryManager::WritePage(int array_id, int virtual_page_id, int offset, int value){
@@ -146,6 +157,7 @@ namespace proj3 {
             physical_page_id = this->page_map[array_id][virtual_page_id];
         }
         this->mem[physical_page_id][offset] = value;
+        this->CLOCK[physical_page_id] = true;
     }
     ArrayList* MemoryManager::Allocate(size_t sz){
         // when an application requires for memory, create an ArrayList and record mappings from its virtual memory space to the physical memory space
@@ -161,26 +173,30 @@ namespace proj3 {
     void MemoryManager::Release(ArrayList* arr){
         // an application will call release() function when destroying its arrayList
         // release the virtual space of the arrayList and erase the corresponding mappings
-        // TODO
+
         int id = arr->array_id;
         int sz = arr->size;
         std::map<int, int> array_page_map;
         array_page_map = this->page_map[id];
+        /*int queue_size = this->FIFO_queue.size();
+        for (int i = 0; i < queue_size; i++){
+            int chosen_page = this->FIFO_queue.front();
+            this->FIFO_queue.pop();
+            if (this->page_info[chosen_page].GetHolder() != id) {
+                this->FIFO_queue.push(chosen_page);
+            }
+        }*/
+
         for (int i = 0; i <= (sz - 1) / PageSize; i++) {
             int physical_page_id = array_page_map[i];
             if (physical_page_id != -1){
+            	this->CLOCK[physical_page_id] = false;
+            	for (int j = 0; j < PageSize; j++) {
+                	this->mem[physical_page_id][j] = 0;
+				}
                 this->page_info[physical_page_id].ClearInfo();
             }
         }
         this->page_map.erase(id);
-
-        int queue_size = this->FIFO_queue.size();
-        for (int i = 0; i < queue_size; i++){
-            std::pair<int, int> chosen_page = this->FIFO_queue.front();
-            this->FIFO_queue.pop();
-            if (chosen_page.first != id) {
-                this->FIFO_queue.push(chosen_page);
-            }
-        }
     }
 } // namespce: proj3
