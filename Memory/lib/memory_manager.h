@@ -55,7 +55,9 @@ private:
     int next_array_id;
     size_t mma_sz;
     /*add your extra states here freely for implementation*/
-    std::queue<std::pair<int, int>> FIFO_queue;
+    // std::queue<std::pair<int, int>> FIFO_queue;
+    bool* CLOCK;
+    int CLOCKidx;
 
     void PageIn(int array_id, int virtual_page_id, int physical_page_id);
     void PageOut(int physical_page_id);
