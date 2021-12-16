@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include<cstdio>
 #include <queue>
+#include <mutex>
 
 #define PageSize 1024
 
@@ -58,9 +59,12 @@ private:
     // std::queue<std::pair<int, int>> FIFO_queue;
     bool* CLOCK;
     int CLOCKidx;
+    std::mutex mtx;
+    std::vector<std::mutex *> phy_mtx_list;
+    std::vector<std::vector<std::mutex *>> vir_mtx_list;
 
     void PageIn(int array_id, int virtual_page_id, int physical_page_id);
-    void PageOut(int physical_page_id);
+    void PageOut(int physical_page_id, int holder, int virtual_page_id);
     void PageReplace(int array_id, int virtual_page_id);
 };
 
