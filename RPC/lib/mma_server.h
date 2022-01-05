@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <cstdlib>
+#include <mutex>
 
 #include <grpc++/grpc++.h>
 #include <grpc++/ext/proto_server_reflection_plugin.h>
@@ -48,6 +49,7 @@ namespace proj4 {
         proj4::MemoryManager *mma;
         int max_vir_pages;
         int count;
+        std::mutex mtx;
     };
 
     // setup a server with UnLimited virtual memory space

@@ -181,11 +181,12 @@ namespace proj4 {
         // return new_array;
         return (this->next_array_id - 1);
     }
-    void MemoryManager::Release(int array_id){
+    int MemoryManager::Release(int array_id){
         // an application will call release() function when destroying its arrayList
         // release the virtual space of the arrayList and erase the corresponding mappings
         this->mtx.lock();
         int id = array_id;
+        int pages = 0;
         // lock all virtual locks
         for(auto lck: this->vir_mtx_list[id]) {
             lck->lock();
@@ -195,7 +196,9 @@ namespace proj4 {
 
         for (auto it: array_page_map) {
             int physical_page_id = it.second;
+            pages ++;
             if (physical_page_id != -1){
+
                 this->phy_mtx_list[physical_page_id]->lock();
             	this->CLOCK[physical_page_id] = false;
             	for (int j = 0; j < PageSize; j++) {
@@ -211,5 +214,7 @@ namespace proj4 {
             lck->unlock();
         }
         this->mtx.unlock();
+
+        return pages;
     }
 } // namespce: proj3

@@ -46,8 +46,7 @@ public:
     int ReadPage(int array_id, int virtual_page_id, int offset);
     void WritePage(int array_id, int virtual_page_id, int offset, int value);
     int Allocate(size_t sz);
-    void Release(int array_id);
-    void Release(ArrayList *);
+    int Release(int array_id);
     ~MemoryManager();
 private:
     std::map<int, std::map<int, int>> page_map; // // mapping from ArrayList's virtual page # to physical page #

@@ -30,15 +30,18 @@ Status MmaServiceImpl::Allocate(ServerContext* context, const AllocateRequest* r
     int sz = request->sz();
     int array_id = mma->Allocate(sz);
     reply->set_array_id(array_id);
-    if (count != -1)
-        count ++;
+    if (count != -1) {
+        std::unique_lock<std::mutex> lock(mtx);
+        count += (sz - 1) / PageSize + 1;
+    }
     return Status::OK;
 }
 
 Status MmaServiceImpl::Free(ServerContext* context, const FreeRequest* request, FreeReply* reply) {
     int array_id = request->array_id();
-    mma->Release(array_id);
+    int release_pages = mma->Release(array_id);
     reply->set_message(1);
+    count -= release_pages;
     return Status::OK;
 }
 
